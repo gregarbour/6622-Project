@@ -1,6 +1,7 @@
 library(dplyr)
 library(ggplot2)
 library(MASS)
+library(pscl)
 
 
 load('DebTrivedi')
@@ -77,7 +78,9 @@ m_nb1 <- glm.nb(f1, data = df)
 m_nb2 <- glm.nb(f2, data = df)
 
 #Zero Inflated Negative Binomial
+m_zero_nb1 <- zeroinfl(f1, data = df, dist = 'negbin')
+m_zero_nb2 <- zeroinfl(f2, data = df, dist = 'negbin')
 
-
-#Zero Inflated Quasi Poisson
-
+#Zero Inflated Poisson (Quasi-poisson not available in this package)
+m_zero_pois1 <- zeroinfl(f1, data = df, dist = 'poisson')
+m_zero_pois2 <- zeroinfl(f2, data = df, dist = 'poisson')
