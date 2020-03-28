@@ -174,6 +174,14 @@ summary(m_pois3n)
 ## test sequential adding of all predictors
 anova(m_pois3n, test="Chisq")
 
+###### OFFSET
+## I think we should consider checking whether or not we should include an offset in our
+## model, considering our mean should be thought of as a rate - as in number of chronic
+## diseases over the course of a number of years of age. If we don't include an offset it
+## may cause bias in our estimates. So we rethink of the mean as #diseases/#years of age
+## which will add "complexity" to our model and possibly get more valid results - let me 
+## know what you think.
+
 
 
 
