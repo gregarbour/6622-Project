@@ -39,30 +39,56 @@ legend(5, 1400, legend=c("Data", expression(paste("Poisson Dist., ", lambda, "= 
 dataplot()
 
 
+#This is a sweet plot. Nice job Tino
+#x is a vector of data. Can supply labda or use default = mean(x)
+dataplot2 <- function(x, lambda = mean(x)){
+  barplot(table(x), xlab = "Number of Chronic Diseases", ylab = "Frequency")
+  poigen <- rpois(length(df$numchron), lambda = lambda)
+  barplot(table(poigen), width=0.5, space=c(0.9, rep(1.4, length(unique(poigen))-1)), 
+          col="red", add=TRUE, names.arg = "")
+  legend(5, 1400, legend=c("Data", expression(paste("Poisson Dist., ", lambda, "= 1.54"))),
+         col=c("grey", "red"), pch= 15, cex=0.8)
+}
+dataplot(df$numchron)
+dataplot2(df$numchron, lambda = 5)
+
+
 
 ## too much overdispersion, we haven't looked at this in class much
 ## so we might not be able to do any of the goodness of fit tests -
 ## I'm not sure if they work with zero-inflated models
 plot(table(df$ofp))
-plot(table(rpois(n=1000, lambda = 5.8))) 
-# Big difference beween our dataset at a fitted poisson distributino with lambda = 5.8
-# Much more variance and large number of zeroes
+plot(table(rpois(n=1000, lambda = 5.77))) 
+dataplot2(df$ofp)
 
+mean(df$ofp)
+var(df$ofp)
+# Big difference beween our dataset at a fitted poisson distribution with lambda = 5.77
+# Much more variance and large number of zeroes
+# Quasi poisson or zero-inflated poisson would fit much better
 
 ####### OFP PARAMETER MLE ########
-
+#I don't think we need to include these, but leaving them in just in case. 
+# Likely it's enough to just show the large discrepency between variance and mean
 fitdistr(df$ofp, densfun = 'poisson')
 fitdistr(df$ofp, 'geometric')
 fitdistr(df$ofp, 'negative binomial')
-
 
 fitdistr(rpois(10000, lambda = 5), densfun = 'poisson')
 fitdistr(rpois(100, lambda = 5), densfun = 'poisson')
 fitdistr(rnorm(n=10, mean = 10), densfun = 'normal')
 
 
+############ Exploratory Plots ################
+#The second variable set was pretty arbitrary. Maybe only add 1 or 2 vars to simplify things?
+var1 <- c('hosp', 'health', 'numchron', 'gender', 'school')
+var2 <- c('adldiff', 'region', 'age', 'black', 'married',
+          'faminc', 'employed', 'privins', 'medicaid')
+
+
 #log1p is used because ofp has some zero counts
 ggplot(df, aes(x = factor(numchron), y = log1p(ofp))) + geom_boxplot()
+
 
 
 ####### VARIABLE EXPLANATIONS ########
@@ -92,10 +118,10 @@ ggplot(df, aes(x = factor(numchron), y = log1p(ofp))) + geom_boxplot()
 
 ######### OFP FORMULAS ###########
 
-var1 <- c('hosp', 'health', 'numchron', 'gender', 'school')
+
 f1 <- as.formula(paste('ofp ~', paste(var1, collapse = ' + ')))
 
-var2 <- c('adldiff', 'region', 'age', 'black', 'married', 'faminc', 'employed', 'privins', 'medicaid')
+
 f2 <- as.formula(paste('ofp ~', paste(c(var1, var2),  collapse = ' + ')))
 
 ######### OFP MODELS ##########
