@@ -1,0 +1,21 @@
+---
+title: "GLM Data Analysis Final Project"
+author: "Greg Arbour & Konstantinos Ntentes"
+date: "Winter 2020"
+output: html_notebook
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+### Objective
+
+Our objective is to find a dataset with a non-continuous response variable and at least seven explanatory variables (at least two of them categorical). We are to use the techniques learned in the Generalized Linear Models course (MATH 6622) to analyze the data and report the statistical results.
+
+The data are obtained from the US National Medical Expenditure Survey (NMES) which was conducted in 1987 and 1988 to provide a comprehensive picture of how Americans use and pay for health services. We consider a subsample of individuals ages 66 and over (a total of 4406 observations) all of whom are covered by Medicare, a public insurance programme that offers substantial protection against health care costs in the United States. This data is taken from the paper **Demand for Medical Care by the Eldery: A Finite Mixture Approach** by Partha Deb and Pravin K. Trivedi.
+
+The dataset we have 
+
+### Data Directory
+
