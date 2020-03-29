@@ -73,10 +73,78 @@ remove(DebTrivedi)
 head(df)
 ```
 
-All of the variables seem to be in a workable state - although some data cleaning can idealize the dataset. We will change all of the two-factor categorical variables, including `adldiff`, `black`, `gender`, `married`, `employed`, `privins`, and `medicaid` into boolean variables.
+All of the variables seem to be in a workable state - although some data cleaning can idealize the dataset. We will change all of the two-factor categorical variables, including `adldiff`, `black`, `gender`, `married`, `employed`, `privins`, and `medicaid` into logical variables.
 
+**Note**: the variable name for `gender` was changed to `male` when it was translated into a logical variable for easy interpretation.
 
+Let's take a look at the state of missingness in the data set:
 
+```{r, echo=FALSE}
+library(visdat)
+
+if (!is.logical(df$adldiff)){
+## adldiff
+df$adldiff <- as.logical(as.numeric(df$adldiff) - 1)
+
+## black
+df$black <- as.logical(as.numeric(df$black) - 1)
+
+## gender (true = male, name change to male instead of gender)
+df$gender <- as.logical(as.numeric(df$gender) - 1)
+
+## married
+df$married <- as.logical(as.numeric(df$married) - 1)
+
+## employed 
+df$employed <- as.logical(as.numeric(df$employed) - 1)
+
+## privins 
+df$privins <- as.logical(as.numeric(df$privins) - 1)
+
+## medicaid 
+df$medicaid <- as.logical(as.numeric(df$medicaid) - 1)
+
+# change name of gender to male
+varnames <- names(df)
+varnames[8] <- 'male'
+names(df) <- varnames
+}
+
+print("How many NA's are in each column?")
+t(data.frame("NA.Freq" = colSums(is.na(df))))
+```
+
+It looks like we don't have any missing values, which is rare for medical data, but it is great for our analysis nonetheless.
+
+##### Response Distribution
+
+Remember that our response variable `ofp` is a count variable measuring the number of physician office visits in the measured year. Let's take a look at a frequency plot of the response variable to see if it compares in shape to a Poisson distribution with similar mean:
+
+```{r, echo=FALSE}
+ofpmu <- mean(df$ofp)
+
+dataplot2 <- function(x, lambda = mean(x)){
+  poigen <- rpois(length(x), lambda = lambda)
+  barplot(table(x), xlab = "Number of Physician Office Visits in 1987", ylim = c(0, 800),
+          ylab = "Response Frequency", xlim = c(0, ifelse(length(unique(poigen))>=length(unique(x)), 
+                                                 length(unique(poigen))+2, min(length(unique(x))+2, 24.9))),
+          main = "Distribution Comparison of Response")
+  if (length(unique(x))>=length(unique(poigen))){
+    barplot(table(poigen), width=0.5, space=c(0.9, rep(1.4, length(unique(poigen))-1)), 
+            col="red", add=TRUE, names.arg = "")
+  } else {
+    barplot(table(poigen), width=0.5, space=c(0.9, rep(1.4, length(unique(poigen))-1)), 
+            col="red", add=TRUE, names.arg = c(rep("", length(unique(x))), (length(unique(x)) + 1):length(unique(poigen))))
+  }
+  legend(15, max(max(table(x)), max(table(poigen))) - 150, 
+         legend=c("Data", expression(paste("Poisson Dist., ", lambda, " = ", 5.77))),
+         col=c("grey", "red"), pch= 15, cex = 0.8)
+}
+
+dataplot2(df$ofp)
+```
+
+It's quite clear that `ofp` doesn't follow a regular Poisson distribution, and some peculiar characteristics of the data's distribution are evident in the plot. For the sake of convenience we let the random variable $X$ represent the `ofp` response. We note that the mean of `ofp` is $\lambda = E[X] = `r mean(df$ofp)`, but the variance of the distribution is much higher thn the mean, with $\text{Var}(X) = `r var(df$ofp)` \ne \lambda$. We can see this characteristic in the plot by looking at the spread of the grey data, and how much further left and right of the true distribution data the grey data pops up. 
 
 
 
