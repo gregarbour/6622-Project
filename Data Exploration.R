@@ -250,7 +250,7 @@ pchisq(2 * (logLik(m_zero_nb1) - logLik(m_zero_nb0)), df = 5, lower.tail = FALSE
 
 
 #There are a few options for comparing models to pick the "best" one
-# We can use AIC and BIC
+# We can use AIC and BIC (or QAIC in MuMin packge for overdispersed count data)
 
 # We can also use glmmulti to find the best subset of predictors based on some criteria (e.g. AIC)
 
