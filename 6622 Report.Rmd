@@ -13,7 +13,51 @@ knitr::opts_chunk$set(echo = TRUE)
 
 Find a dataset with a non-continuous response variable and at least seven explanatory variables (at least two of them categorical). Use the techniques learned in the Generalized Linear Models course (MATH 6622) to analyze the data and report the statistical results.
 
-The data are obtained from the US National Medical Expenditure Survey (NMES) which was conducted in 1987 and 1988 to provide a comprehensive picture of how Americans use and pay for health services. We consider a subsample of individuals ages 66 and over (a total of 4406 observations) all of whom are covered by Medicare, a public insurance programme that offers substantial protection against health care costs in the United States. This data is taken from the paper **Demand for Medical Care by the Eldery: A Finite Mixture Approach** by Partha Deb and Pravin K. Trivedi.
+The data are obtained from the US National Medical Expenditure Survey (NMES) which was conducted in 1987 and 1988 to provide a comprehensive picture of how Americans use and pay for health services. We consider a subsample of individuals ages 66 and over all of whom are covered by Medicare, a public insurance programme that offers substantial protection against health care costs in the United States. This data is taken from the paper **Demand for Medical Care by the Eldery: A Finite Mixture Approach** by Partha Deb and Pravin K. Trivedi.
+
+##### Model Response
+
+We are looking to model the **number of non-hospital physician office visits over the course of a year** for the observed seniors, predicted both in terms of personal characteristic variables like age, minority status and income, as well as some other macro-variables like the region of the United States in which each senior resides.
 
 ### Data Directory
+
+The dataset provided includes 4406 observations and 22 variables including our response. All the observations will be used, but only a subset of the predictors will be included in our analysis.
+
+The variables correspond to measurements of counts and personal characterstics in the year 1987, and can be described as follows:
+
+
+**`ofp`**: number of physician office visits in the measured year (our response count variable)
+
+**`health`**: categorical variable measuring self-perceived health level (can take values `poor`, `average` or `excellent`)
+
+**`numchron`**: number of chronic health conditions the person surveyed has (including cancer, previous heart attack, gall bladder problems, emphysema, arthritis, diabetes, or other heart diseases)
+
+**`adldiff`**: categorical variable measuring whether or not the person has a condition that limits the activities of daily living (can take values `no` or `yes`)
+
+**`region`**: categorical variable that states the geographical region of the United States in which the person lives (can take values `noreast`, `midwest`, `west` or `other`)
+
+**`age`**: $(\text{age in years})\times 10^{-1}$ of the person
+
+**`black`**: categorical variable stating whether or not the person is of African American heritage (can take values `no` or `yes`)
+
+**`gender`**: categorical variable stating whether the person is male or female (can take values `male` or `female`)
+
+**`married`**: categorical variable stating whether or not the person is married (can take values `no` or `yes`)
+
+**`school`**: number of years of education of the person
+
+**`faminc`**: $(\text{yearly income}) \times \$ 10,000^{-1}$ of the household of the person
+
+**`employed`**: categorical variable stating whether or not the person is employed (can take values `no` or `yes`)
+
+**`privins`**: categorical variable stating whether or not the person is covered by private health insurance (can take values `no` or `yes`)
+
+**`medicaid`**: categorical variable stating whether or not the person is covered by Medicaid (can take values `no` or `yes`)
+
+
+### Exploratory Data Analysis
+
+
+
+
 
