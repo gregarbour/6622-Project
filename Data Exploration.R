@@ -75,6 +75,10 @@ fitdistr(df$ofp, 'geometric')
 fitdistr(df$ofp, 'negative binomial')
 
 
+
+
+
+
 ####### VARIABLE EXPLANATIONS ########
 
 #Variables included in example
@@ -96,7 +100,13 @@ fitdistr(df$ofp, 'negative binomial')
 # privins: Private insurance yes/no
 # medicard: Medicaid yes/no
 
-############ Exploratory Plots ################
+
+
+
+################################################
+############ Exploratory Stuff ################
+###############################################
+
 var1 <- c('hosp', 'health', 'numchron', 'gender', 'school')
 #var2 <- c('adldiff', 'region', 'age', 'black', 'married', 'faminc', 'employed', 'privins', 'medicaid')
 # I propose adding only the three variables below, instead of all the ones I initially listed above
@@ -104,7 +114,7 @@ var2 <- c('age', 'privins', 'medicaid') #These three variables are the most sign
 
 #Create dataframes with only the variables listed above
 df1 <- dplyr::select(df, ofp, one_of(var1))
-df2 <- dplyr::select(df, ofp, one_of(var2))
+df2 <- dplyr::select(df, ofp, one_of(var1), one_of(var2))
 
 ggplot(df, aes(x = ofp, y = hosp)) + geom_point() + geom_smooth(method = 'lm')
 ggplot(df, aes(x = ofp, y = numchron)) + geom_point() + geom_smooth(method = 'lm')
@@ -119,6 +129,54 @@ ggplot(df, aes(x = ofp)) + geom_histogram() + facet_wrap(~medicaid)
 
 #log1p is used because ofp has some zero counts
 ggplot(df, aes(x = factor(numchron), y = log1p(ofp))) + geom_boxplot()
+
+#Table 1 for all variables (I'm manually copying the output to Excel for formatting)
+numeric_vars <- c('ofp', 'hosp', 'numchron', 'school', 'age')
+numeric_sum <- t(sapply(dplyr::select(df, one_of(numeric_vars)), FUN = summary))
+
+cat_sum <- df %>% group_by(health) %>% 
+  summarise(Count = n(),
+            Percent_total = n()/nrow(df),
+            Mean = mean(ofp),
+            Median = median(ofp),
+            Std_dev = sd(ofp)) %>% 
+  ungroup()
+cat_sum$Variable = 'Health'
+names(cat_sum)[1] <- 'Levels'
+
+gender_sum <- df %>% group_by(gender) %>% 
+  summarise(Count = n(),
+            Percent_total = n()/nrow(df),
+            Mean = mean(ofp),
+            Median = median(ofp),
+            Std_dev = sd(ofp)) %>% 
+  ungroup()
+gender_sum$Variable = 'Gender'
+names(gender_sum)[1] <- 'Levels'
+
+privins_sum <- df %>% group_by(privins) %>% 
+  summarise(Count = n(),
+            Percent_total = n()/nrow(df),
+            Mean = mean(ofp),
+            Median = median(ofp),
+            Std_dev = sd(ofp)) %>% 
+  ungroup()
+privins_sum$Variable = 'Private Insurance'
+names(privins_sum)[1] <- 'Levels'
+
+medicaid_sum <- df %>% group_by(medicaid) %>% 
+  summarise(Count = n(),
+            Percent_total = n()/nrow(df),
+            Mean = mean(ofp),
+            Median = median(ofp),
+            Std_dev = sd(ofp)) %>% 
+  ungroup()
+medicaid_sum$Variable = 'Has Medicaid'
+names(medicaid_sum)[1] <- 'Levels'
+
+cat_sum <- bind_rows(cat_sum, gender_sum, privins_sum, medicaid_sum)
+
+
 
 
 ######################################
@@ -168,12 +226,15 @@ summary(m_zero_nb2)
 
 
 
+
+################################################
 ############# Model Diagnostics ################
+################################################
 
 #Deviance test of additional parameters
 (deviance(m_qp1) - deviance(m_qp2)) > qchisq(0.95, 3)
 (deviance(m_nb1) - deviance(m_nb2)) > qchisq(0.95, 3)
-
+# deviance() function doesn't work for zero_inflated models
 
 
 #Comparing adding the three additional parameters
@@ -186,7 +247,9 @@ anova(m_zero_nb1, m_zero_nb2) #ANOVA doesn't work for this type of model. See LR
 # https://stats.idre.ucla.edu/r/dae/zip/
 pchisq(2 * (logLik(m_zero_nb2) - logLik(m_zero_nb1)), df = 3, lower.tail = FALSE) 
 pchisq(2 * (logLik(m_zero_nb1) - logLik(m_zero_nb0)), df = 5, lower.tail = FALSE)
-#There are definitely a couple options for comparing models to pick the "best" one
+
+
+#There are a few options for comparing models to pick the "best" one
 # We can use AIC and BIC
 
 # We can also use glmmulti to find the best subset of predictors based on some criteria (e.g. AIC)
