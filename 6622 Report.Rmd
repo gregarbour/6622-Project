@@ -144,7 +144,7 @@ dataplot2 <- function(x, lambda = mean(x)){
 dataplot2(df$ofp)
 ```
 
-It's quite clear that `ofp` doesn't follow a regular Poisson distribution, and some peculiar characteristics of the data's distribution are evident in the plot. For the sake of convenience we let the random variable $X$ represent the `ofp` response. We note that the mean of `ofp` is $\lambda = E[X] = `r mean(df$ofp)`, but the variance of the distribution is much higher thn the mean, with $\text{Var}(X) = `r var(df$ofp)` \ne \lambda$. We can see this characteristic in the plot by looking at the spread of the grey data, and how much further left and right of the true distribution data the grey data pops up. 
+It's quite clear that `ofp` doesn't follow a regular Poisson distribution, and some peculiar characteristics of the data's distribution are evident in the plot. For the sake of convenience we let the random variable $X$ represent the `ofp` response. We note that the mean of `ofp` is $\lambda = E[X] = `r mean(df$ofp)`, but the variance of the distribution is much higher than the mean, with $\text{Var}(X) = `r var(df$ofp)` \ne \lambda$. We can see this characteristic in the plot by looking at the spread of the grey data, and how much further left and right of the true distribution data the grey data pops up. 
 
 
 

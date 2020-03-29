@@ -35,7 +35,7 @@ barplot(table(df$numchron), xlab = "Number of Chronic Diseases", ylab = "Frequen
 poigen <- rpois(length(df$numchron), lambda = mean(df$numchron))
 barplot(table(poigen), width=0.5, space=c(0.9, rep(1.4, length(unique(poigen))-1)), 
         col="red", add=TRUE, names.arg = "")
-legend(5, 1400, legend=c("Data", expression(paste("Poisson Dist., ", lambda, "= 1.54"))),
+legend(5, 1400, legend=c("Data", expression(paste("Poisson Dist., ", lambda, " = 1.54"))),
        col=c("grey", "red"), pch= 15, cex=0.8)
 }
 dataplot()
@@ -44,15 +44,25 @@ dataplot()
 #This is a sweet plot. Nice job Tino
 #x is a vector of data. Can supply labda or use default = mean(x)
 dataplot2 <- function(x, lambda = mean(x)){
-  barplot(table(x), xlab = "Number of Chronic Diseases", ylab = "Frequency")
   poigen <- rpois(length(df$numchron), lambda = lambda)
-  barplot(table(poigen), width=0.5, space=c(0.9, rep(1.4, length(unique(poigen))-1)), 
-          col="red", add=TRUE, names.arg = "")
-  legend(5, 1400, legend=c("Data", expression(paste("Poisson Dist., ", lambda, "= 1.54"))),
-         col=c("grey", "red"), pch= 15, cex=0.8)
+  barplot(table(x), xlab = "Number of Chronic Diseases", 
+          ylab = "Frequency", xlim = c(0, ifelse(length(unique(poigen))>=length(unique(x)), 
+                                                 length(unique(poigen))+2, min(length(unique(x))+2, 25))))
+  if (length(unique(x))>=length(unique(poigen))){
+    barplot(table(poigen), width=0.5, space=c(0.9, rep(1.4, length(unique(poigen))-1)), 
+            col="red", add=TRUE, names.arg = "")
+  } else {
+    barplot(table(poigen), width=0.5, space=c(0.9, rep(1.4, length(unique(poigen))-1)), 
+            col="red", add=TRUE, names.arg = c(rep("", length(unique(x))), (length(unique(x)) + 1):length(unique(poigen))))
+  }
+  legend(13, max(max(table(x)), max(table(poigen))) - 150, legend=c("Data", expression(paste("Poisson Dist., mean = ", lambda))),
+         col=c("grey", "red"), pch= 15, cex = 0.8)
 }
-dataplot(df$numchron)
+dataplot2(df$numchron)
 dataplot2(df$numchron, lambda = 5)
+## Good idea, now we can use this to also show that ofp doesnt fit
+## I MESSED WITH THIS PLOT SO IT WOULD LOOK NORMAL FOR OUR OFP DATA,
+## I have to tweak it everytime we need it for a new purpose
 
 
 
@@ -61,6 +71,8 @@ dataplot2(df$numchron, lambda = 5)
 ## I'm not sure if they work with zero-inflated models
 plot(table(df$ofp))
 plot(table(rpois(n=1000, lambda = 5.77))) 
+
+# I had to tweak the dataplot function to look okay with our data
 dataplot2(df$ofp)
 
 mean(df$ofp)
@@ -366,5 +378,10 @@ df$privins <- as.logical(as.numeric(df$privins) - 1)
 table(df$medicaid)
 table(as.numeric(df$medicaid)) # no is level 1, yes is level 2
 df$medicaid <- as.logical(as.numeric(df$medicaid) - 1)
+
+# change name of gender to male
+varnames <- names(df)
+varnames[8] <- 'male'
+names(df) <- varnames
 
 
