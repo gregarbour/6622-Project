@@ -8,6 +8,8 @@ load('DebTrivedi')
 df <- DebTrivedi
 remove(DebTrivedi)
 
+names(df)
+
 set.seed(1337)
 
 ######################################
@@ -208,6 +210,43 @@ anova(m_pois3n, test="Chisq")
 ## which will add "complexity" to our model and possibly get more valid results - let me 
 ## know what you think.
 
+####################### VARIABLE TRANSFORMATION ########################
+##### Change the two-factor variables to boolean
+## Factors can be releveled and cause confusion if baseline factor is not intuitive
 
+## adldiff
+table(df$adldiff)
+table(as.numeric(df$adldiff)) #no is level 1, yes is level 2
+df$adldiff <- as.logical(as.numeric(df$adldiff) - 1)
+
+## black
+table(df$black)
+table(as.numeric(df$black)) # no is level 1, yes is level 2
+df$black <- as.logical(as.numeric(df$black) - 1)
+
+## gender (true = male, name change to male instead of gender)
+table(df$gender)
+table(as.numeric(df$gender)) # female is level 1, male is level 2
+df$gender <- as.logical(as.numeric(df$gender) - 1)
+
+## married
+table(df$married)
+table(as.numeric(df$married)) # no is level 1, yes is level 2
+df$married <- as.logical(as.numeric(df$married) - 1)
+
+## employed 
+table(df$employed)
+table(as.numeric(df$employed)) # no is level 1, yes is level 2
+df$employed <- as.logical(as.numeric(df$employed) - 1)
+
+## privins 
+table(df$privins)
+table(as.numeric(df$privins)) # no is level 1, yes is level 2
+df$privins <- as.logical(as.numeric(df$privins) - 1)
+
+## medicaid 
+table(df$medicaid)
+table(as.numeric(df$medicaid)) # no is level 1, yes is level 2
+df$medicaid <- as.logical(as.numeric(df$medicaid) - 1)
 
 

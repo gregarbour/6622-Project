@@ -54,8 +54,27 @@ The variables correspond to measurements of counts and personal characterstics i
 
 **`medicaid`**: categorical variable stating whether or not the person is covered by Medicaid (can take values `no` or `yes`)
 
+This still leaves us with all 4406 observations but reduces the number of variables to 14.
 
 ### Exploratory Data Analysis
+
+##### Data Cleaning
+
+First, we load in the data and take a look at the first few observations (note that the following table is interactive and scrollable):
+
+```{r, echo=FALSE}
+set.seed(1337)
+
+load('DebTrivedi')
+df <- DebTrivedi[ , c(1, 7:19)]
+remove(DebTrivedi)
+
+## Interactive Table (Scroll right and left)
+head(df)
+```
+
+All of the variables seem to be in a workable state - although some data cleaning can idealize the dataset. We will change all of the two-factor categorical variables, including `adldiff`, `black`, `gender`, `married`, `employed`, `privins`, and `medicaid` into boolean variables.
+
 
 
 
