@@ -204,8 +204,8 @@ f2 <- as.formula(paste('ofp ~', paste(c(var1, var2),  collapse = ' + ')))
 ######### OFP MODELS ##########
 
 #Regular Poisson
-# m_pois1 <- glm(f1, data = df, family = poisson)
-# m_pois2 <- glm(f2, data = df, family = poisson)
+ m_pois1 <- glm(f1, data = df, family = poisson)
+ m_pois2 <- glm(f2, data = df, family = poisson)
 
 #Quasi Poisson
 m_qp1 <- glm(f1, data = df, family = quasipoisson)
@@ -222,11 +222,21 @@ c("Model 1" = s_qp1$dispersion, "Model 2" = s_qp2$dispersion)
 #Test if the use of a dispersion parameter is warranted.
 #TINO - I can't get this package to install properly. Can you?
 library(AER)
-dispersiontest(m_qp1, trafo = 1) #trafo parameter specifies that the null hypothesis is that dispersion param = 1
-dispersiontest(m_qp2, trafo = 1)
+dispersiontest(m_pois1)
+dispersiontest(m_pois2, trafo = 2)
+
+### I got it into install using
+install.packages('AER')
+library(AER)
+## and using the full model I estimated the dispersion paarameters and tested them
+dispersiontest(m_pois2, trafo = 1) ## this tests for quasipoisson dispersion paramter
+dispersiontest(m_pois2, trafo = 2) ## this tests for negative binomial dispersion parameter
+## I wrote out all reasoning and tests in the report
+## This was a really great find!!!!!
+
 
 #Negative Binomial
-m_nb1 <- glm.nb(f1, data = df)
+m_nb1 <- glm.nb(f1, data = df, alternative)
 m_nb2 <- glm.nb(f2, data = df)
 summary(m_nb1)
 summary(m_nb2)
@@ -235,7 +245,7 @@ summary(m_nb2)
 m_zero_nb0 <- zeroinfl(ofp ~ 1, data = df, dist = 'negbin') #Null model with just an intercept
 m_zero_nb1 <- zeroinfl(f1, data = df, dist = 'negbin')
 m_zero_nb2 <- zeroinfl(f2, data = df, dist = 'negbin')
-summary(m_zero_nb1)
+summary(m_zero_nb0)
 summary(m_zero_nb2)
 
 

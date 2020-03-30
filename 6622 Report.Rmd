@@ -7,6 +7,8 @@ output: html_notebook
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
+library(AER)
+library(MASS)
 ```
 
 ### Objective
@@ -124,7 +126,7 @@ When dealing with count data as a response variable, it is natural to first appr
 
 Identifying if the response variable is rate data or not is another important aspect in order to determine whether an offset is required in your model. In our case, as per the data description, all measurements were taken over the course of the year 1987, hence the counts are all over the same length of time and we do not require an offset in our model as our data is not rate data.
 
-We will attempt to fit the saturated model to take a preliminary look:
+We will attempt to fit the full model to take a preliminary look:
 
 ```{r}
 var <- c('health', 'adldiff', 'region', 'age', 'male', 'black', 
@@ -136,10 +138,12 @@ summary(pfit)
 
 We can see that quite a few variables show strong statistical association with the response, but we should take a look at how the response variable `ofp` looks when compared to a vector of Poisson randomly generated values with the same means:
 
-```{r, echo=FALSE}
+```{r}
 ## Output fitted values to use distribution plot
 pfitted <- fitted(pfit)
+```
 
+```{r, echo=FALSE}
 mui <- mean(df$ofp)
 vari <- var(df$ofp)
 
@@ -156,7 +160,7 @@ dataplot2 <- function(x, lambda = lambda){
     barplot(table(poigen), width=0.5, space=c(0.9, rep(1.4, length(unique(poigen))-1)), 
             col="red", add=TRUE, names.arg = c(rep("", length(unique(x))), (length(unique(x)) + 1):length(unique(poigen))))
   }
-  legend(15, max(max(table(x)), max(table(poigen))) - 150, 
+  legend(18, max(max(table(x)), max(table(poigen))) - 100, 
          legend=c("Data", expression(paste("Poisson Dist., ", lambda, " = ", mu[i]))),
          col=c("grey", "red"), pch= 15, cex = 0.8)
 }
@@ -176,15 +180,23 @@ In the Quasi-Poisson case, the variance follows a linear relationship with the m
 
 In the Negative binomial case, the variance follows a quadratic relationship with the mean. For example, if $E[Y] = \mu$, then we have $\text{Var}(Y) = \mu + \kappa \mu^2$, where $\kappa$ is the Negative Binomial dispersion parameter.
 
-In order to decide which method is best, we have to look at the relationship between the means $\mu_i$ and the squared residuals of the regular poisson fit $(Y-\mu_i)^2$ in comparison with the two variance relationships. In order to do this, we first estimate both overdispersion parameters $\theta$ and $\kappa$ using the full model we specified before:
+In order to decide which method is best, we have to look at the relationship between the means $\mu_i$ and the squared residuals of the regular poisson fit $(Y_i-\mu_i)^2$ in comparison with the two variance relationships. In order to do this, we first estimate both overdispersion parameters $\theta$ and $\kappa$ using `dispersiontest()` from `library(AER)`, which tests the null hypothesis of equidispersion in Poisson GLMs against the alternative of overdispersion. The coefficient can be estimated by an auxiliary OLS regression and tested with the corresponding $t$ (or $z$) statistic which is asymptotically distributed as $N(0,1)$ under $H_0$ [see Cameron, A.C. and Trivedi, P.K. (1990)].
 
-```{r} 
-library(MASS)
-qpfit <- glm(form, data = df, family = 'quasipoisson')
-nbfit <- glm.nb(form, data = df)
+The test with option `trafo = 1` performs a statistical test on $H_0: \alpha = 0$ against the alternative $H_1: \alpha > 0$ where $\text{Var}(Y) = \theta \mu = (1+\alpha)\mu$ for overdispersion in the Quasi-Poisson case and provides an estimate of $\alpha$, while the test with option `trafo = 2` performs a statistical test on $H_0: \alpha = 0$ against the alternative $H_1: \alpha > 0$ where $\text{Var}(Y) = \mu + \kappa \mu^2 = \mu + \alpha \mu^2$ for overdispersion in the Negative Binomial case and provides an estimate of $\alpha$:
 
-qpdisp <- summary(qpfit)$dispersion
-nbdisp <- nbfit$theta
+
+```{r}
+### Dispersion Test from library(AER)
+qpdtest <- dispersiontest(pfit, trafo = 1)
+nbdtest <- dispersiontest(pfit, trafo = 2)
+
+### Dispersion Parameter Estimates
+qpdisp <- 1 + qpdtest$estimate
+nbdisp <- nbdtest$estimate
+
+### Dispersion Test p-values
+qpdispp <- qpdtest$p.value
+nbdispp <- nbdtest$p.value
 
 ### Squared Residuals
 presids <- (df$ofp - pfitted)^2
@@ -199,9 +211,9 @@ varnb <- function(mu){
 }
 ```
 
-In the Quasi-Poisson case, we estimate the dispersion parameter to be $\theta = `r qpdisp`$ and the relationship of the variance to the mean can be written as $\text{Var}(Y) = `r qpdisp` \mu$.
+In the Quasi-Poisson case, we estimate the dispersion parameter to be $\theta = `r qpdisp`$ and the relationship of the variance to the mean can be written as $\text{Var}(Y) = (1+`r qpdisp`) \mu$. With respect to the previously outlined test, we reject $H_0$ with associated $p\text{-value}= `r qpdispp`$, which means that there's strong evidence that $\alpha >0$.
 
-in the Negative Binomial case, we take the dispersion parameter to be $\kappa = `r nbdisp`$ and the relationship of the variance to the mean can be written as $\text{Var}(Y) = \mu + `r nbdisp` \mu^2$.
+in the Negative Binomial case, we take the dispersion parameter to be $\kappa = `r nbdisp`$ and the relationship of the variance to the mean can be written as $\text{Var}(Y) = \mu + `r nbdisp` \mu^2$. With respect to the previously outlined test, we reject $H_0$ with associated $p\text{-value}= `r nbdispp`$, which means that there's strong evidence that $\alpha > 0$.
 
 We now take a look at the relationship between the squared residuals of the regular Poisson regression model and the means:
 
@@ -257,7 +269,7 @@ dataplot3 <- function(x, lambda, kappa){
   }
   legend(15, max(max(table(x)), max(table(poigen))) - 150, 
          legend=c("Data", "Negative Binomial Dist., ", 
-                  expression(paste(" ", mu, " = ", mu[i], ", ", kappa, " = ", 1.1022))),
+                  expression(paste(" ", mu, " = ", mu[i], ", ", kappa, " = ", 1.01311))),
          col=c("grey", "red", "white"), pch= 15, cex = 0.8)
 }
 
@@ -265,4 +277,12 @@ dataplot3(df$ofp, lambda = nbfitted, kappa = nbdisp)
 ```
 
 It's quite clear that the Negative Binomial family fits the data much better than the plain Poisson distribution. This relationship can be seen visually in the above plot.
+
+### Is a Zero-Inflated model appropriate?
+
+
+
+
+
+
 
