@@ -140,6 +140,9 @@ We can see that quite a few variables show strong statistical association with t
 ## Output fitted values to use distribution plot
 pfitted <- fitted(pfit)
 
+mui <- mean(df$ofp)
+vari <- var(df$ofp)
+
 dataplot2 <- function(x, lambda = lambda){
   poigen <- rpois(length(x), lambda = lambda)
   barplot(table(x), xlab = "Number of Physician Office Visits in 1987", ylim = c(0, 800),
@@ -161,9 +164,105 @@ dataplot2 <- function(x, lambda = lambda){
 dataplot2(df$ofp, lambda = pfitted)
 ```
 
-It's quite clear that `ofp` doesn't follow a regular Poisson distribution, and some peculiar characteristics of the response variable's distribution are evident in the plot. For the sake of convenience we let the random variable $X$ represent the `ofp` response. We note that the mean of `ofp` is $\lambda = E[X] = `r mean(df$ofp)`, but the variance of the distribution is much higher than the mean, with $\text{Var}(X) = `r var(df$ofp)` \ne \lambda$. This is called overdispersion, and we can see this visually in the plot by looking at the spread of the grey data, and how much further left and right of the red true distribution it spreads.
+It's quite clear that `ofp` doesn't follow a regular Poisson distribution, and some peculiar characteristics of the response variable's distribution are evident in the plot. For the sake of convenience we let the random variable $X$ represent the `ofp` response. We note that the mean of `ofp` is $\lambda = E[X] = `r mui`$ on average, but the variance of the distribution on average is much higher than the mean, with $\text{Var}(X) = `r vari` \ne \lambda$. 
 
-We can fit the response variable to 
+In a Poisson regression model, it's important that the mean of the Poisson output is equal to the variance. Sometimes, the variance is greater than the mean, which is called overdispersion, and we can see this visually in the plot by looking at the spread of the grey data, and how much further left and right of the red true distribution it spreads. This basically confirms that the regular Poisson regression of the data won't fit well, and we need to introduce the modelling of a second parameter, called the dispersion parameter, to properly model the data. This can be done by either fitting a negative binomial model or a quasi-poisson model to the data.
+
+### Quasi-Poisson or Negative Binomial?
+
+In regular Poisson regression, a key assumption that's made is that the variance of the response variable is equal to the mean. If the response's variance is larger than its mean, the response is overdispersed, and either Negative Binomial regression or Quasi-Poisson regression should be used. Either family allows for a second parameter to model the variance's relationship to the mean, but in different ways.
+
+In the Quasi-Poisson case, the variance follows a linear relationship with the mean. If $Y$ is our response variable, and $E[Y] = \mu$, then we have $\text{Var}(Y) = \theta \mu$, where $\theta$ is the Quasi-Poisson overdispersion parameter.
+
+In the Negative binomial case, the variance follows a quadratic relationship with the mean. For example, if $E[Y] = \mu$, then we have $\text{Var}(Y) = \mu + \kappa \mu^2$, where $\kappa$ is the Negative Binomial dispersion parameter.
+
+In order to decide which method is best, we have to look at the relationship between the means $\mu_i$ and the squared residuals of the regular poisson fit $(Y-\mu_i)^2$ in comparison with the two variance relationships. In order to do this, we first estimate both overdispersion parameters $\theta$ and $\kappa$ using the full model we specified before:
+
+```{r} 
+library(MASS)
+qpfit <- glm(form, data = df, family = 'quasipoisson')
+nbfit <- glm.nb(form, data = df)
+
+qpdisp <- summary(qpfit)$dispersion
+nbdisp <- nbfit$theta
+
+### Squared Residuals
+presids <- (df$ofp - pfitted)^2
+
+### Variance Functions
+varqp <- function(mu){
+  qpdisp * mu
+}
+
+varnb <- function(mu){
+  mu + nbdisp * mu^2
+}
+```
+
+In the Quasi-Poisson case, we estimate the dispersion parameter to be $\theta = `r qpdisp`$ and the relationship of the variance to the mean can be written as $\text{Var}(Y) = `r qpdisp` \mu$.
+
+in the Negative Binomial case, we take the dispersion parameter to be $\kappa = `r nbdisp`$ and the relationship of the variance to the mean can be written as $\text{Var}(Y) = \mu + `r nbdisp` \mu^2$.
+
+We now take a look at the relationship between the squared residuals of the regular Poisson regression model and the means:
 
 
+```{r, echo=FALSE}
+meanvec <- Inf
+sizes   <- Inf
+uniques <- unique(round(pfitted, 1))
+
+for (i in uniques){
+  ind <- round(pfitted, 1) == i
+  meanvec <- c(meanvec, mean(presids[ind]))
+  sizes <- c(sizes, sum(ind))
+}
+
+meanvec <- meanvec[-1]
+sizes   <- sizes[-1]
+
+### Plot
+plot(x = uniques, y = meanvec, ylim = c(0, 130), 
+     xlab = expression(paste("Mean ", mu[i])), 
+     ylab = expression(paste("Residuals ", (Y[i]-mu[i])^2)),
+     main = 'Average Squared Residuals by Fitted Values',
+     xlim = c(0, 15), cex = sqrt(sizes*200/(sum(sizes))))
+curve(varqp, col = 'red', add = TRUE, lty = 'dashed', lwd = 2)
+curve(varnb, col = 'blue', add = TRUE, lty = 'dashed', lwd = 2)
+legend(11.5, 130, legend = c("Negative Binomial", "Quasi-Poisson"),
+       col=c("blue", "red"), pch= 15, cex = 0.8)
+```
+
+The previous plot shows average squared residuals by fitted means. The fitted mean values were rounded to one decimal place and residual values that shared the same means were averaged. The size of the circles corresponds to the proportion (or the weight) of response values representing the same mean value. 
+
+The red dashed line represents the linear relationship that the variance should follow if the model should be fit with a Quasi-Poisson family, and the blue dashed line represents the quadratic relationship that the variance should follow if the model should be fit with a Negative Binomial family. It's quite clear from the plot that a vast majority of the residuals follow the quadratic relationship much better than they do the linear relationship. For this reason, we will stick to the Negative Binomial family when fitting the model.
+
+Using the full Negative Binomial model fit we used in the previous section, we can look at a new distribution plot using the Negative Binomial fitted values and see if the distribution comparison with the data is better:
+
+```{r, echo = FALSE}
+nbfitted <- fitted(nbfit)
+
+dataplot3 <- function(x, lambda, kappa){
+  poigen <- rnbinom(length(x), mu = lambda, size = (1/kappa))
+  barplot(table(x), xlab = "Number of Physician Office Visits in 1987", ylim = c(0, 800),
+          ylab = "Response Frequency", xlim = c(0, ifelse(length(unique(poigen))>=length(unique(x)), 
+                                                 length(unique(poigen))+2, min(length(unique(x))+2, 24.9))),
+          main = "Distribution Comparison of Response")
+  if (length(unique(x))>=length(unique(poigen))){
+    barplot(table(poigen), width=0.5, space=c(0.9, rep(1.4, length(unique(poigen))-1)), 
+            col="red", add=TRUE, names.arg = "")
+  } else {
+    barplot(table(poigen), width=0.5, space=c(0.9, rep(1.4, length(unique(poigen))-1)), 
+            col="red", add=TRUE, names.arg = c(rep("", length(unique(x))), 
+                                               (length(unique(x)) + 1):length(unique(poigen))))
+  }
+  legend(15, max(max(table(x)), max(table(poigen))) - 150, 
+         legend=c("Data", "Negative Binomial Dist., ", 
+                  expression(paste(" ", mu, " = ", mu[i], ", ", kappa, " = ", 1.1022))),
+         col=c("grey", "red", "white"), pch= 15, cex = 0.8)
+}
+
+dataplot3(df$ofp, lambda = nbfitted, kappa = nbdisp)
+```
+
+It's quite clear that the Negative Binomial family fits the data much better than the plain Poisson distribution. This relationship can be seen visually in the above plot.
 

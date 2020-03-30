@@ -73,7 +73,7 @@ plot(table(df$ofp))
 plot(table(rpois(n=1000, lambda = 5.77))) 
 
 # I had to tweak the dataplot function to look okay with our data
-dataplot2(df$ofp)
+dataplot2(df$ofp, pfitted)
 
 mean(df$ofp)
 var(df$ofp)
