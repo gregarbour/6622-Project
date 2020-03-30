@@ -179,7 +179,7 @@ summary(zero1)
 AIC(nb1)
 AIC(zero1)
 
-nb2 <- update(nb1, . ~ . + age)
+
 
 # It looks like the Zero-Inflated model is slightly better, although AIC is not recommended for over dispersed count data (and is probably kind
 # of a crappy measure in general)
@@ -187,13 +187,31 @@ nb2 <- update(nb1, . ~ . + age)
 # used in class don't work on Zero-inflated models')
 # Currently I'm looking into different measures for comparing the two models, and finding justification for only exploring the NB
 
+######## Experiment with adding parameters to the NB model #######
+#### Add Age ####
+nb2 <- update(nb1, . ~ . + age)
 
+#Wald Test
+summary(nb2)
+abs(coef(nb2)[8] / sqrt(summary(nb2)$cov.unscaled[8,8])) > 1.96 #Std Error is diff than in the summary. Is that due to Wald test using Normal dist?
 
+#LR Test
+(deviance(nb2) - deviance(nb1)) > qchisq(0.95, 1)
 
+#Age fails to be significant in both LR and Wald Tests
+
+#### Add Privins ####
+nb3 <- update(nb1, . ~ . + privins)
+#Wald Test
+summary(nb3)
+abs(coef(nb3)[8] / sqrt(summary(nb3)$cov.unscaled[8,8])) > 1.96 #Std Error is diff than in the summary. Is that due to Wald test using Normal dist?
+
+#LR Test
+(deviance(nb2) - deviance(nb1)) > qchisq(0.95, 1)
 #There are three tests 
 #Deviance test of additional parameters
 (deviance(m_nb1) - deviance(m_nb2)) > qchisq(0.95, 3)
-# deviance() function doesn't work for zero_inflated models
+
 
 
 #Comparing adding the three additional parameters
