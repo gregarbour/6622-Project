@@ -26,40 +26,40 @@ var(df$ofp)  # var about 45.68
 ## Factors can be releveled and cause confusion if baseline factor is not intuitive
 
 ## adldiff
-table(df$adldiff)
-table(as.numeric(df$adldiff)) #no is level 1, yes is level 2
+# table(df$adldiff)
+# table(as.numeric(df$adldiff)) #no is level 1, yes is level 2
 df$adldiff <- as.logical(as.numeric(df$adldiff) - 1)
 
 ## black
-table(df$black)
-table(as.numeric(df$black)) # no is level 1, yes is level 2
+# table(df$black)
+# table(as.numeric(df$black)) # no is level 1, yes is level 2
 df$black <- as.logical(as.numeric(df$black) - 1)
 
 ## gender (true = male, name change to male instead of gender)
-table(df$gender)
-table(as.numeric(df$gender)) # female is level 1, male is level 2
+# table(df$gender)
+# table(as.numeric(df$gender)) # female is level 1, male is level 2
 df$gender <- as.logical(as.numeric(df$gender) - 1)
 # change name of gender to male
 names(df)[names(df)=='gender'] <- 'male'
 
 ## married
-table(df$married)
-table(as.numeric(df$married)) # no is level 1, yes is level 2
+# table(df$married)
+# table(as.numeric(df$married)) # no is level 1, yes is level 2
 df$married <- as.logical(as.numeric(df$married) - 1)
 
 ## employed 
-table(df$employed)
-table(as.numeric(df$employed)) # no is level 1, yes is level 2
+# table(df$employed)
+# table(as.numeric(df$employed)) # no is level 1, yes is level 2
 df$employed <- as.logical(as.numeric(df$employed) - 1)
 
 ## privins 
-table(df$privins)
-table(as.numeric(df$privins)) # no is level 1, yes is level 2
+# table(df$privins)
+# table(as.numeric(df$privins)) # no is level 1, yes is level 2
 df$privins <- as.logical(as.numeric(df$privins) - 1)
 
 ## medicaid 
-table(df$medicaid)
-table(as.numeric(df$medicaid)) # no is level 1, yes is level 2
+# table(df$medicaid)
+# table(as.numeric(df$medicaid)) # no is level 1, yes is level 2
 df$medicaid <- as.logical(as.numeric(df$medicaid) - 1)
 
 
@@ -169,15 +169,17 @@ f2 <- as.formula(paste('ofp ~', paste(c(var1, var2),  collapse = ' + ')))
 
 ######## Step 1: Compare NB to Zero-Inflated NB using the base predictor variables #########
 
-m_nb1 <- glm.nb(f1, data = df)
-summary(m_nb1)
+nb1 <- glm.nb(f1, data = df)
+summary(nb1)
 
-m_zero1 <- zeroinfl(f1, data = df, dist = 'negbin')
-summary(m_zero1)
+zero1 <- zeroinfl(f1, data = df, dist = 'negbin')
+summary(zero1)
 
 #Compare the zero-inflated to regular NB model
-AIC(m_nb1)
-AIC(m_zero1)
+AIC(nb1)
+AIC(zero1)
+
+nb2 <- update(nb1, . ~ . + age)
 
 # It looks like the Zero-Inflated model is slightly better, although AIC is not recommended for over dispersed count data (and is probably kind
 # of a crappy measure in general)
