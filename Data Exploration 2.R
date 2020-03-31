@@ -198,10 +198,15 @@ abs(coef(nb2)[8] / sqrt(summary(nb2)$cov.unscaled[8,8])) > 1.96 #Std Error is di
 #LR Test
 (deviance(nb2) - deviance(nb1)) > qchisq(0.95, 1)
 
+# ANOVA
+anova(nb2, nb1) #How to interpret this?
+
 #Age fails to be significant in both LR and Wald Tests
+
 
 #### Add Privins ####
 nb3 <- update(nb1, . ~ . + privins)
+
 #Wald Test
 summary(nb3)
 abs(coef(nb3)[8] / sqrt(summary(nb3)$cov.unscaled[8,8])) > 1.96 #Std Error is diff than in the summary. Is that due to Wald test using Normal dist?
