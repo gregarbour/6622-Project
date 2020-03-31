@@ -236,4 +236,3 @@ pchisq(2 * (logLik(m_zero1) - logLik(m_zero0)), df = 5, lower.tail = FALSE)
 
 
 
-
