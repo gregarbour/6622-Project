@@ -213,7 +213,7 @@ varnb <- function(mu){
 
 In the Quasi-Poisson case, we estimate the dispersion parameter to be $\theta = `r qpdisp`$ and the relationship of the variance to the mean can be written as $\text{Var}(Y) = (1+`r qpdisp`) \mu$. With respect to the previously outlined test, we reject $H_0$ with associated $p\text{-value}= `r qpdispp`$, which means that there's strong evidence that $\alpha >0$.
 
-in the Negative Binomial case, we take the dispersion parameter to be $\kappa = `r nbdisp`$ and the relationship of the variance to the mean can be written as $\text{Var}(Y) = \mu + `r nbdisp` \mu^2$. With respect to the previously outlined test, we reject $H_0$ with associated $p\text{-value}= `r nbdispp`$, which means that there's strong evidence that $\alpha > 0$.
+In the Negative Binomial case, we take the dispersion parameter to be $\kappa = `r nbdisp`$ and the relationship of the variance to the mean can be written as $\text{Var}(Y) = \mu + `r nbdisp` \mu^2$. With respect to the previously outlined test, we reject $H_0$ with associated $p\text{-value}= `r nbdispp`$, which means that there's strong evidence that $\alpha > 0$.
 
 We now take a look at the relationship between the squared residuals of the regular Poisson regression model and the means:
 
