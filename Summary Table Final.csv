@@ -1,0 +1,10 @@
+Variable,Levels,Count,Percent of Total,Mean,Median,Standard Deviation
+Health,poor,554,12.57%,8.90,7,9.118
+Health,average,3509,79.64%,5.51,4,6.310
+Health,excellent,343,7.78%,3.43,2,4.859
+Male,0,2628,59.65%,6.01,4,6.590
+Male,1,1778,40.35%,5.42,4,6.989
+Private Insurance,0,985,22.36%,4.91,3,6.098
+Private Insurance,1,3421,77.64%,6.02,4,6.919
+Has Medicaid,0,4004,90.88%,5.68,4,6.740
+Has Medicaid,1,402,9.12%,6.71,5,6.886

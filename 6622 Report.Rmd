@@ -9,6 +9,8 @@ output: html_notebook
 knitr::opts_chunk$set(echo = TRUE)
 library(AER)
 library(MASS)
+library(broom)
+library(pscl)
 ```
 
 ### Objective
@@ -19,7 +21,7 @@ The data are obtained from the US National Medical Expenditure Survey (NMES) whi
 
 ##### Model Response
 
-We are looking to model the **number of non-hospital physician office visits over the course of a year** for the observed seniors, predicted both in terms of personal characteristic variables like age, minority status and income, as well as some other macro-variables like the region of the United States in which each senior resides. 
+We attempt to model the **number of non-hospital physician office visits over the course of a year** for the observed seniors, predicted both in terms of personal characteristic variables like age, minority status and income, as well as some other macro-variables like the region of the United States in which each senior resides. 
 
 In this project, we will be working from a predictive standpoint and will try to attain the leanest possible model to model the number of physician visits, and will not attempt to model the causal effect relationship between the predictors and the response. 
 
@@ -30,7 +32,7 @@ The dataset provided includes 4406 observations and 22 variables including our r
 The variables correspond to measurements of counts and personal characterstics in the year 1987, and can be described as follows:
 
 
-**`ofp`**: number of physician office visits in the measured year (our response count variable)
+**`ofp`**: number of physician office visits in the measured year **(our response count variable)**
 
 **`health`**: categorical variable measuring self-perceived health level (can take values `poor`, `average` or `excellent`)
 
@@ -59,6 +61,11 @@ The variables correspond to measurements of counts and personal characterstics i
 **`medicaid`**: categorical variable stating whether or not the person is covered by Medicaid (can take values `no` or `yes`)
 
 This still leaves us with all 4406 observations but reduces the number of variables to 14.
+
+```{r include = T, echo = F}
+sum_table <- read.csv('Summary Table Final.csv')
+kable(sum_table)
+```
 
 ### Exploratory Data Analysis
 
@@ -120,7 +127,7 @@ t(data.frame("NA.Freq" = colSums(is.na(df))))
 
 It looks like we don't have any missing values, which is rare for medical data, but it is great for our analysis nonetheless.
 
-##### Generalized Linear Model
+##### Baseline Generalized Linear Model
 
 When dealing with count data as a response variable, it is natural to first approach modelling the data using Poisson regression and the log-link function.
 
@@ -133,7 +140,7 @@ var <- c('health', 'adldiff', 'region', 'age', 'male', 'black',
           'married', 'school', 'faminc', 'employed', 'privins', 'medicaid')
 form <- as.formula(paste('ofp ~', paste(var, collapse = ' + ')))
 pfit <- glm(form, data = df, family = poisson(link = 'log'))
-summary(pfit)
+broom::tidy(pfit)
 ```
 
 We can see that quite a few variables show strong statistical association with the response, but we should take a look at how the response variable `ofp` looks when compared to a vector of Poisson randomly generated values with the same means:
@@ -170,19 +177,21 @@ dataplot2(df$ofp, lambda = pfitted)
 
 It's quite clear that `ofp` doesn't follow a regular Poisson distribution, and some peculiar characteristics of the response variable's distribution are evident in the plot. For the sake of convenience we let the random variable $X$ represent the `ofp` response. We note that the mean of `ofp` is $\lambda = E[X] = `r mui`$ on average, but the variance of the distribution on average is much higher than the mean, with $\text{Var}(X) = `r vari` \ne \lambda$. 
 
-In a Poisson regression model, it's important that the mean of the Poisson output is equal to the variance. Sometimes, the variance is greater than the mean, which is called overdispersion, and we can see this visually in the plot by looking at the spread of the grey data, and how much further left and right of the red true distribution it spreads. This basically confirms that the regular Poisson regression of the data won't fit well, and we need to introduce the modelling of a second parameter, called the dispersion parameter, to properly model the data. This can be done by either fitting a negative binomial model or a quasi-poisson model to the data.
+In a Poisson regression model, it's important that the mean of the Poisson output is equal to the variance. Sometimes, the variance is greater than the mean, which is called overdispersion, and we can see this visually in the plot by looking at the spread of the grey data, and how much further left and right of the red true distribution it spreads. This basically confirms that the regular Poisson regression of the data won't fit well, and we need to introduce the modelling of a second parameter, called the dispersion parameter, to properly model the data. Accounting for overdispersion in the response variable can be done by either fitting a negative binomial model or a quasi-poisson model to the data. Lastly, we will also consider a zero-inflated negative binomial model, as there appear to be a disproportionate number of zeros in the response.
 
 ### Quasi-Poisson or Negative Binomial?
 
-In regular Poisson regression, a key assumption that's made is that the variance of the response variable is equal to the mean. If the response's variance is larger than its mean, the response is overdispersed, and either Negative Binomial regression or Quasi-Poisson regression should be used. Either family allows for a second parameter to model the variance's relationship to the mean, but in different ways.
+In regular Poisson regression, a key assumption that's made is that the variance of the response variable is equal to the mean. If the response's variance is larger than its mean, the response is overdispersed, and either Negative Binomial regression or Quasi-Poisson regression should be used. Both quasi poisson and negative binomial models include a second parameter to separately model the relationship between the variance the mean.
 
 In the Quasi-Poisson case, the variance follows a linear relationship with the mean. If $Y$ is our response variable, and $E[Y] = \mu$, then we have $\text{Var}(Y) = \theta \mu$, where $\theta$ is the Quasi-Poisson overdispersion parameter.
 
 In the Negative binomial case, the variance follows a quadratic relationship with the mean. For example, if $E[Y] = \mu$, then we have $\text{Var}(Y) = \mu + \kappa \mu^2$, where $\kappa$ is the Negative Binomial dispersion parameter.
 
-In order to decide which method is best, we have to look at the relationship between the means $\mu_i$ and the squared residuals of the regular poisson fit $(Y_i-\mu_i)^2$ in comparison with the two variance relationships. In order to do this, we first estimate both overdispersion parameters $\theta$ and $\kappa$ using `dispersiontest()` from `library(AER)`, which tests the null hypothesis of equidispersion in Poisson GLMs against the alternative of overdispersion. The coefficient can be estimated by an auxiliary OLS regression and tested with the corresponding $t$ (or $z$) statistic which is asymptotically distributed as $N(0,1)$ under $H_0$ [see Cameron, A.C. and Trivedi, P.K. (1990)].
+In order to decide which method is best, we have to look at the relationship between the means $\mu_i$ and the squared residuals of the regular poisson fit $(Y_i-\mu_i)^2$ in comparison with the two variance relationships. In order to do this, we first estimate both overdispersion parameters $\theta$ and $\kappa$ using `dispersiontest()` from `library(AER)`, which tests the null hypothesis of equidispersion in Poisson GLMs against the alternative hypothesis that there is overdispersion. The coefficient can be estimated by an auxiliary OLS regression and tested with the corresponding $t$ (or $z$) statistic which is asymptotically distributed as $N(0,1)$ under $H_0$ [see Cameron, A.C. and Trivedi, P.K. (1990)].
 
-The test with option `trafo = 1` performs a statistical test on $H_0: \alpha = 0$ against the alternative $H_1: \alpha > 0$ where $\text{Var}(Y) = \theta \mu = (1+\alpha)\mu$ for overdispersion in the Quasi-Poisson case and provides an estimate of $\alpha$, while the test with option `trafo = 2` performs a statistical test on $H_0: \alpha = 0$ against the alternative $H_1: \alpha > 0$ where $\text{Var}(Y) = \mu + \kappa \mu^2 = \mu + \alpha \mu^2$ for overdispersion in the Negative Binomial case and provides an estimate of $\alpha$:
+The test with parameter `trafo = 1` performs a statistical test on $H_0: \alpha = 0$ against the alternative $H_1: \alpha > 0$ where $\text{Var}(Y) = \theta \mu = (1+\alpha)\mu$ for overdispersion in the Quasi-Poisson case and provides an estimate of $\alpha$.
+
+If we instead set `trafo = 2` performs a statistical test on $H_0: \alpha = 0$ against the alternative $H_1: \alpha > 0$ where $\text{Var}(Y) = \mu + \kappa \mu^2 = \mu + \alpha \mu^2$ for overdispersion in the Negative Binomial case and provides an estimate of $\alpha$:
 
 
 ```{r}
@@ -211,9 +220,9 @@ varnb <- function(mu){
 }
 ```
 
-In the Quasi-Poisson case, we estimate the dispersion parameter to be $\theta = `r qpdisp`$ and the relationship of the variance to the mean can be written as $\text{Var}(Y) = (1+`r qpdisp`) \mu$. With respect to the previously outlined test, we reject $H_0$ with associated $p\text{-value}= `r qpdispp`$, which means that there's strong evidence that $\alpha >0$.
+In the Quasi-Poisson case, we estimate the dispersion parameter to be $\theta = `r qpdisp`$ and the relationship of the variance to the mean can be written as $\text{Var}(Y) = (1+`r qpdisp`) \mu$. With respect to the previously outlined test, we reject $H_0$ with associated $p\text{-value}= `r qpdispp`$, which means that there's extremely strong evidence that $\alpha >0$.
 
-in the Negative Binomial case, we take the dispersion parameter to be $\kappa = `r nbdisp`$ and the relationship of the variance to the mean can be written as $\text{Var}(Y) = \mu + `r nbdisp` \mu^2$. With respect to the previously outlined test, we reject $H_0$ with associated $p\text{-value}= `r nbdispp`$, which means that there's strong evidence that $\alpha > 0$.
+In the Negative Binomial case, we take the dispersion parameter to be $\kappa = `r nbdisp`$ and the relationship of the variance to the mean can be written as $\text{Var}(Y) = \mu + `r nbdisp` \mu^2$. With respect to the previously outlined test, we reject $H_0$ with associated $p\text{-value}= `r nbdispp`$, which means that there's extremely strong evidence that $\alpha > 0$.
 
 We now take a look at the relationship between the squared residuals of the regular Poisson regression model and the means:
 
@@ -276,10 +285,7 @@ dataplot3 <- function(x, lambda, kappa){
 dataplot3(df$ofp, lambda = nbfitted, kappa = nbdisp)
 ```
 
-It's quite clear that the Negative Binomial family fits the data much better than the plain Poisson distribution. This relationship can be seen visually in the above plot.
-
-### Is a Zero-Inflated model appropriate?
-
+It's quite clear that the Negative Binomial family fits the data much better than the ordinary Poisson distribution. This relationship can be seen visually in the above plot.
 
 
 

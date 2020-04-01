@@ -1,0 +1,167 @@
+---
+title: "Gregs Part"
+author: "Greg Arbour"
+date: '2020-03-31'
+output: html_document
+---
+
+```{r echo = F, include = F}
+library(MASS)
+library(pscl)
+library(lmtest)
+library(broom)
+setwd("~/6622-Project")
+load('DebTrivedi')
+df <- DebTrivedi[ , c(1, 7:19)]
+remove(DebTrivedi)
+
+if (!is.logical(df$adldiff)){
+## adldiff
+df$adldiff <- as.logical(as.numeric(df$adldiff) - 1)
+
+## black
+df$black <- as.logical(as.numeric(df$black) - 1)
+
+## gender (true = male, name change to male instead of gender)
+df$gender <- as.logical(as.numeric(df$gender) - 1)
+
+## married
+df$married <- as.logical(as.numeric(df$married) - 1)
+
+## employed 
+df$employed <- as.logical(as.numeric(df$employed) - 1)
+
+## privins 
+df$privins <- as.logical(as.numeric(df$privins) - 1)
+
+## medicaid 
+df$medicaid <- as.logical(as.numeric(df$medicaid) - 1)
+
+# change name of gender to male
+varnames <- names(df)
+varnames[8] <- 'male'
+names(df) <- varnames
+}
+
+var <- c('health', 'adldiff', 'region', 'age', 'male', 'black', 
+          'married', 'school', 'faminc', 'employed', 'privins', 'medicaid')
+form <- as.formula(paste('ofp ~', paste(var, collapse = ' + ')))
+
+```
+
+### Is a Zero-Inflated model appropriate?
+In cases where there are a higher number of zero's than expected observed in the response variable, it is appropriate to consider a zero inflated model. Zero inflated models are a two-component mixture model combining a point mass at zero with a count distribution (E.g. Poisson, Negative Binomial). There are then two sources of zeros: from either the point mass or the count model. 
+
+Zero inflated are typically used when there is another process outside of what is accounted in the original model that causes a response value of zero.
+For example, in predicting the number of insurance claims submitted for a particular risk (e.g. flood), the counts may be zero inflated by those people who have not taken out an insurance policy for that particular risk and are therefore unable to submit a claim. The mixture model therefore has two components.
+
+$\ Pr(y_{j} = 0) = \pi + (1-\pi)f(0)$
+$\ Pr(y_{j} = h) = (1-\pi)f(h), \;\;\;h \ge 0$
+
+Where $\pi$ is modeled by a binomial GLM $\pi = g^{-1}(Z^{T}\gamma)$
+
+How does a zero-inflated model fit with our data? We examine this by fitting both a negative binomial and a zero inflated negative binomial on a subset of the most predictive variables.
+
+```{r include = T, echo = T}
+nbfit1 <- glm.nb(formula = ofp ~ adldiff + health + numchron + male + school, data = df)
+zerofit1 <- zeroinfl(formula = ofp ~ adldiff + health + numchron + male + school , data = df, dist = 'negbin')
+
+```
+Using AIC as a rough metric to evaluate model fit, we see that $AIC_{NB} = 24501.5$ and $AIC_{Zero Inf} =24386.17$.  
+It is difficult to use other metrics, such as  $BIC$ or $R^2$ as these do not apply to both model types. Despite the zero inflated model having a lower AIC, we believe it is not an appropriate choice for this analysis. The description of the dataset gives no indication that the data is not iid or that there is any kind of underlying process that would induce a response of zero (other than the variables and processes that are already accounted for). Additionally, is it expected that a zero inflated model would perform as well better than its non-inflated counter part. This is due simply to the fact that is no additional zeros are observed (beyond what is expected) the zero inflated model simply sets $\pi$ close to zero and it simplifies to an ordinary negative binomial model.
+
+Following from this conclusion, the remainder of our model with focus on the use of the negative binomial mode.
+
+### Variable Selection 
+Starting with our base model of $ofp \sim adldiff + health + numchron + male + school$ we will attempt to find the optimal model through addition of parameters.
+
+#### Test including the 'faminc' covariate.
+```{r include = T, echo = T}
+nbfit2 <- update(nbfit1, . ~ . + faminc)
+#Wald Test
+abs(coef(nbfit2)[8] / sqrt(summary(nbfit2)$cov.unscaled[8,8])) > 1.96
+
+#Likelihood Ratio Test
+(deviance(nbfit1) - deviance(nbfit2)) > qchisq(0.95, 1)
+
+#ANOVA
+anova(nbfit2, nbfit1)
+```
+All three tests agree that the $faminc$ variable is not significant in the model and will therefore be excluded. Next we try the $privins$ covariate.
+
+#### Test including the 'privins' covariate.
+```{r include = T, echo = T}
+nbfit3 <- update(nbfit1, . ~ . + privins)
+#Wald Test
+abs(coef(nbfit3)[8] / sqrt(summary(nbfit3)$cov.unscaled[8,8])) > 1.96
+
+#Likelihood Ratio Test
+(deviance(nbfit1) - deviance(nbfit3)) > qchisq(0.95, 1)
+
+#ANOVA
+anova(nbfit3, nbfit1)
+```
+Wald and Likelihood Ratio tests disagree on whether the variable is significant. We will include the variable, but also test removing it at a later juncture.
+
+#### Test including the 'medicaid' covariate.
+```{r include = T, echo = T}
+nbfit4 <- update(nbfit3, . ~ . + medicaid)
+#Wald Test
+abs(coef(nbfit4)[9] / sqrt(summary(nbfit4)$cov.unscaled[9,9])) > 1.96
+
+#Likelihood Ratio Test
+(deviance(nbfit3) - deviance(nbfit4)) > qchisq(0.95, 1)
+
+#ANOVA
+anova(nbfit4, nbfit3)
+```
+Once again the Wald and Likelihood Ratio tests disagree on whether the variable is significant. We will include the variable, but also test removing it at a later juncture.
+
+#### Test including the 'black' covariate.
+```{r include = T, echo = T}
+nbfit5 <- update(nbfit4, . ~ . + black)
+#Wald Test
+abs(coef(nbfit5)[10] / sqrt(summary(nbfit5)$cov.unscaled[10,10])) > 1.96
+
+#Likelihood Ratio Test
+(deviance(nbfit4) - deviance(nbfit5)) > qchisq(0.95, 1)
+
+#ANOVA
+anova(nbfit5, nbfit4)
+```
+The three tests agree that $black$ is not a significant variable and it will be excluded from future models.
+
+#### Test including the 'age' covariate.
+```{r include = T, echo = T}
+nbfit6 <- update(nbfit4, . ~ . + age)
+#Wald Test
+abs(coef(nbfit6)[10] / sqrt(summary(nbfit6)$cov.unscaled[10,10])) > 1.96
+
+#Likelihood Ratio Test
+(deviance(nbfit4) - deviance(nbfit6)) > qchisq(0.95, 1) #HOW IS DEVIANCE SMALLER IN nbfit4????
+
+#ANOVA
+anova(nbfit4, nbfit6)
+```
+Once again all three tests agree that $age$ is not significant. These is a little counterintuitive, given that age is usually such a dominate variable in heatlhcare related data. We will refit the model with age, but excluding the two variables that the LR Test suggested were not significant.
+
+#### Test refitting the base model with the 'age' covariate.
+```{r include = T, echo = T}
+nbfit7 <- update(nbfit1, . ~ . + age)
+#Wald Test
+abs(coef(nbfit7)[8] / sqrt(summary(nbfit7)$cov.unscaled[8,8])) > 1.96
+
+#Likelihood Ratio Test
+(deviance(nbfit1) - deviance(nbfit7)) > qchisq(0.95, 1) # HOW IS THE DEVIANCE BIGGER for nbfit7 ???
+
+#ANOVA
+anova(nbfit1, nbfit7)
+```
+Even with removing the two suspect variables and refitting on the base model, the age covariate is not signficiant.
+
+### Comparing candidate models
+We will use the aforementioned tests, in addition to AIC and BIC criteria to weigh the overall appropriateness of the 7 candidate models
+```{r include = F, echo = F}
+aic_vec <- c(AIC(nbfit1), AIC(nbfit2), AIC(nbfit3), AIC(nbfit4), AIC(nbfit5), AIC(nbfit6), AIC(nbfit7)) 
+bic_vec <- c(BIC(nbfit1), BIC(nbfit2), BIC(nbfit3), BIC(nbfit4), BIC(nbfit5), BIC(nbfit6), BIC(nbfit7)) 
+```

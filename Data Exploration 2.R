@@ -2,7 +2,7 @@ library(ggplot2)
 library(MASS)
 library(pscl)
 library(dplyr)
-library(bbmle)
+library(lmtest)
 
 load('DebTrivedi')
 df <- DebTrivedi
@@ -106,53 +106,57 @@ ggplot(df, aes(x = ofp)) + geom_histogram() + facet_wrap(~medicaid)
 
 #log1p is used because ofp has some zero counts
 ggplot(df, aes(x = factor(numchron), y = log1p(ofp))) + geom_boxplot()
-
-#Table 1 for all variables (I'm manually copying the output to Excel for formatting)
-numeric_vars <- c('ofp', 'hosp', 'numchron', 'school', 'age')
-numeric_sum <- t(sapply(dplyr::select(df, one_of(numeric_vars)), FUN = summary))
-
-cat_sum <- df %>% group_by(health) %>% 
-  summarise(Count = n(),
-            Percent_total = n()/nrow(df),
-            Mean = mean(ofp),
-            Median = median(ofp),
-            Std_dev = sd(ofp)) %>% 
-  ungroup()
-cat_sum$Variable = 'Health'
-names(cat_sum)[1] <- 'Levels'
-
-gender_sum <- df %>% group_by(gender) %>% 
-  summarise(Count = n(),
-            Percent_total = n()/nrow(df),
-            Mean = mean(ofp),
-            Median = median(ofp),
-            Std_dev = sd(ofp)) %>% 
-  ungroup()
-gender_sum$Variable = 'Gender'
-names(gender_sum)[1] <- 'Levels'
-
-privins_sum <- df %>% group_by(privins) %>% 
-  summarise(Count = n(),
-            Percent_total = n()/nrow(df),
-            Mean = mean(ofp),
-            Median = median(ofp),
-            Std_dev = sd(ofp)) %>% 
-  ungroup()
-privins_sum$Variable = 'Private Insurance'
-names(privins_sum)[1] <- 'Levels'
-
-medicaid_sum <- df %>% group_by(medicaid) %>% 
-  summarise(Count = n(),
-            Percent_total = n()/nrow(df),
-            Mean = mean(ofp),
-            Median = median(ofp),
-            Std_dev = sd(ofp)) %>% 
-  ungroup()
-medicaid_sum$Variable = 'Has Medicaid'
-names(medicaid_sum)[1] <- 'Levels'
-
-cat_sum <- bind_rows(cat_sum, gender_sum, privins_sum, medicaid_sum)
-
+############################################################################################### 
+##### Table 1 for all variables (I'm manually copying the output to Excel for formatting) #####
+# numeric_vars <- c('ofp', 'hosp', 'numchron', 'school', 'age')
+# numeric_sum <- t(sapply(dplyr::select(df, one_of(numeric_vars)), FUN = summary))
+# 
+# cat_sum <- df %>% group_by(health) %>% 
+#   summarise(Count = n(),
+#             Percent_total = n()/nrow(df),
+#             Mean = mean(ofp),
+#             Median = median(ofp),
+#             Std_dev = sd(ofp)) %>% 
+#   ungroup()
+# cat_sum$Variable = 'Health'
+# names(cat_sum)[1] <- 'Levels'
+# cat_sum$Levels <- as.character(cat_sum$Levels)
+# 
+# gender_sum <- df %>% group_by(male) %>% 
+#   summarise(Count = n(),
+#             Percent_total = n()/nrow(df),
+#             Mean = mean(ofp),
+#             Median = median(ofp),
+#             Std_dev = sd(ofp)) %>% 
+#   ungroup()
+# gender_sum$Variable = 'Male'
+# names(gender_sum)[1] <- 'Levels'
+# gender_sum$Levels <- as.character(as.numeric(gender_sum$Levels))
+# 
+# privins_sum <- df %>% group_by(privins) %>% 
+#   summarise(Count = n(),
+#             Percent_total = n()/nrow(df),
+#             Mean = mean(ofp),
+#             Median = median(ofp),
+#             Std_dev = sd(ofp)) %>% 
+#   ungroup()
+# privins_sum$Variable = 'Private Insurance'
+# names(privins_sum)[1] <- 'Levels'
+# privins_sum$Levels <- as.character(as.numeric(privins_sum$Levels))
+# 
+# medicaid_sum <- df %>% group_by(medicaid) %>% 
+#   summarise(Count = n(),
+#             Percent_total = n()/nrow(df),
+#             Mean = mean(ofp),
+#             Median = median(ofp),
+#             Std_dev = sd(ofp)) %>% 
+#   ungroup()
+# medicaid_sum$Variable = 'Has Medicaid'
+# names(medicaid_sum)[1] <- 'Levels'
+# medicaid_sum$Levels <- as.character(as.numeric(medicaid_sum$Levels))
+# 
+# cat_sum <- bind_rows(cat_sum, gender_sum, privins_sum, medicaid_sum)
+# write.csv(cat_sum, file = "Summary Table.csv")
 
 
 
@@ -192,6 +196,7 @@ AIC(zero1)
 nb2 <- update(nb1, . ~ . + age)
 
 #Wald Test
+
 summary(nb2)
 abs(coef(nb2)[8] / sqrt(summary(nb2)$cov.unscaled[8,8])) > 1.96 #Std Error is diff than in the summary. Is that due to Wald test using Normal dist?
 
