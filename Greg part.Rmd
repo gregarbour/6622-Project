@@ -63,8 +63,8 @@ Where $\pi$ is modeled by a binomial GLM $\pi = g^{-1}(Z^{T}\gamma)$
 How does a zero-inflated model fit with our data? We examine this by fitting both a negative binomial and a zero inflated negative binomial on a subset of the most predictive variables.
 
 ```{r include = T, echo = T}
-nbfit1 <- glm.nb(formula = ofp ~ adldiff + health + numchron + male + school, data = df)
-zerofit1 <- zeroinfl(formula = ofp ~ adldiff + health + numchron + male + school , data = df, dist = 'negbin')
+nbfit <- glm.nb(formula = ofp ~ adldiff + health + numchron + male + school, data = df)
+zerofit <- zeroinfl(formula = ofp ~ adldiff + health + numchron + male + school , data = df, dist = 'negbin')
 
 ```
 Using AIC as a rough metric to evaluate model fit, we see that $AIC_{NB} = 24501.5$ and $AIC_{Zero Inf} =24386.17$.  
@@ -73,95 +73,65 @@ It is difficult to use other metrics, such as  $BIC$ or $R^2$ as these do not ap
 Following from this conclusion, the remainder of our model with focus on the use of the negative binomial mode.
 
 ### Variable Selection 
-Starting with our base model of $ofp \sim adldiff + health + numchron + male + school$ we will attempt to find the optimal model through addition of parameters.
+Starting with our base model of only the intercept $ofp \sim 1$ we will attempt to find the optimal model through. the incremental addition of the nine candidate parameters:  
+1. adldiff  
+2. health  
+3. numchron  
+4. school  
+5. faminc  
+6. age  
+7. privins  
+8. medicaid  
+9. black  
 
-#### Test including the 'faminc' covariate.
-```{r include = T, echo = T}
-nbfit2 <- update(nbfit1, . ~ . + faminc)
+
+#### Attempt adding adldiff to the model
+```{r echo = T, include = T}
+nb0 <- glm.nb(ofp ~ 1, data = df)
+nb1 <- update(nb0, . ~ . + adldiff)
+
+#Likelihood Ratio (LR) Test
+-2*(logLik(nb0) - logLik(nb1)) > 3.84
+
 #Wald Test
-abs(coef(nbfit2)[8] / sqrt(summary(nbfit2)$cov.unscaled[8,8])) > 1.96
-
-#Likelihood Ratio Test
-(deviance(nbfit1) - deviance(nbfit2)) > qchisq(0.95, 1)
-
-#ANOVA
-anova(nbfit2, nbfit1)
+abs(coef(nb1)[2] / sqrt(summary(nb1)$cov.unscaled[2,2])) > 1.96
 ```
-All three tests agree that the $faminc$ variable is not significant in the model and will therefore be excluded. Next we try the $privins$ covariate.
+The variable passes both the LR and Wald tests, so we will include it.
 
-#### Test including the 'privins' covariate.
-```{r include = T, echo = T}
-nbfit3 <- update(nbfit1, . ~ . + privins)
+#### Attempt adding health to the model
+```{r echo = T, include = T}
+nb2 <- update(nb1, . ~ . + health)
+
+#Likelihood Ratio (LR) Test
+-2*(logLik(nb1) - logLik(nb2)) > 3.84
+
+#Wald Tests (one for each of the two factor levels)
+abs(coef(nb2)[3] / sqrt(summary(nb2)$cov.unscaled[3,3])) > 1.96
+abs(coef(nb2)[4] / sqrt(summary(nb2)$cov.unscaled[4,4])) > 1.96
+```
+As with the $adldiff$ variable, $health$ also passes both the LR and Wald tests and will therefore be included in the model.
+
+We continue adding variables in this manner. Both $numchron$ and $school$ pass LR and Wald tests when added.
+```{r echo = T, include = T}
+nb3 <- update(nb2, . ~ . + numchron)
+nb4 <- update(nb3, . ~ . + school)
+```
+However, $faminc$ does not pass either test when added to the model that already contains the previously mentioned variables.
+#### Attempt adding faminc to the model
+```{r echo = T, include = T}
+nb5 <- update(nb4, . ~. + faminc)
+
+# LR Test
+2*(logLik(nb4)) - 2*logLik(nb5) > 3.84
+
 #Wald Test
-abs(coef(nbfit3)[8] / sqrt(summary(nbfit3)$cov.unscaled[8,8])) > 1.96
-
-#Likelihood Ratio Test
-(deviance(nbfit1) - deviance(nbfit3)) > qchisq(0.95, 1)
-
-#ANOVA
-anova(nbfit3, nbfit1)
+abs(coef(nb5)[7] / sqrt(summary(nb5)$cov.unscaled[7,7])) > 1.96
 ```
-Wald and Likelihood Ratio tests disagree on whether the variable is significant. We will include the variable, but also test removing it at a later juncture.
+We can continue in this way, sequentially adding variables to the model and keeping them if they pass both tests. The results are given in the table below.
 
-#### Test including the 'medicaid' covariate.
-```{r include = T, echo = T}
-nbfit4 <- update(nbfit3, . ~ . + medicaid)
-#Wald Test
-abs(coef(nbfit4)[9] / sqrt(summary(nbfit4)$cov.unscaled[9,9])) > 1.96
+![](table.png)
 
-#Likelihood Ratio Test
-(deviance(nbfit3) - deviance(nbfit4)) > qchisq(0.95, 1)
+We see that the age, faminc and black variables failed to make it into the model. As the model adds more an more parameters, it becomes more difficult to pass the Wald & LR tests for significance. This is evidenced by the black variables failing to achieve significance when there are alrady 6 other variables in the model (Model #9) but when added to a simpler model (Model #10) it does. It is for this reason that simply adding variables one at a time and rejecting those that fail significance is not the most reliable route for building a predictive model; the order in which the variables are added matters.
 
-#ANOVA
-anova(nbfit4, nbfit3)
-```
-Once again the Wald and Likelihood Ratio tests disagree on whether the variable is significant. We will include the variable, but also test removing it at a later juncture.
+To select the best of the 10 candidate models, AIC and BIC values were calculated. We see that Model #8: $ofp \sim adldiff + health + numchron + school + privins + medicaid$ has the best scores for both AIC and BIC. 
 
-#### Test including the 'black' covariate.
-```{r include = T, echo = T}
-nbfit5 <- update(nbfit4, . ~ . + black)
-#Wald Test
-abs(coef(nbfit5)[10] / sqrt(summary(nbfit5)$cov.unscaled[10,10])) > 1.96
-
-#Likelihood Ratio Test
-(deviance(nbfit4) - deviance(nbfit5)) > qchisq(0.95, 1)
-
-#ANOVA
-anova(nbfit5, nbfit4)
-```
-The three tests agree that $black$ is not a significant variable and it will be excluded from future models.
-
-#### Test including the 'age' covariate.
-```{r include = T, echo = T}
-nbfit6 <- update(nbfit4, . ~ . + age)
-#Wald Test
-abs(coef(nbfit6)[10] / sqrt(summary(nbfit6)$cov.unscaled[10,10])) > 1.96
-
-#Likelihood Ratio Test
-(deviance(nbfit4) - deviance(nbfit6)) > qchisq(0.95, 1) #HOW IS DEVIANCE SMALLER IN nbfit4????
-
-#ANOVA
-anova(nbfit4, nbfit6)
-```
-Once again all three tests agree that $age$ is not significant. These is a little counterintuitive, given that age is usually such a dominate variable in heatlhcare related data. We will refit the model with age, but excluding the two variables that the LR Test suggested were not significant.
-
-#### Test refitting the base model with the 'age' covariate.
-```{r include = T, echo = T}
-nbfit7 <- update(nbfit1, . ~ . + age)
-#Wald Test
-abs(coef(nbfit7)[8] / sqrt(summary(nbfit7)$cov.unscaled[8,8])) > 1.96
-
-#Likelihood Ratio Test
-(deviance(nbfit1) - deviance(nbfit7)) > qchisq(0.95, 1) # HOW IS THE DEVIANCE BIGGER for nbfit7 ???
-
-#ANOVA
-anova(nbfit1, nbfit7)
-```
-Even with removing the two suspect variables and refitting on the base model, the age covariate is not signficiant.
-
-### Comparing candidate models
-We will use the aforementioned tests, in addition to AIC and BIC criteria to weigh the overall appropriateness of the 7 candidate models
-```{r include = F, echo = F}
-aic_vec <- c(AIC(nbfit1), AIC(nbfit2), AIC(nbfit3), AIC(nbfit4), AIC(nbfit5), AIC(nbfit6), AIC(nbfit7)) 
-bic_vec <- c(BIC(nbfit1), BIC(nbfit2), BIC(nbfit3), BIC(nbfit4), BIC(nbfit5), BIC(nbfit6), BIC(nbfit7)) 
-```
