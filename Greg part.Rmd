@@ -10,6 +10,7 @@ library(MASS)
 library(pscl)
 library(lmtest)
 library(broom)
+library(knitr)
 setwd("~/6622-Project")
 load('DebTrivedi')
 df <- DebTrivedi[ , c(1, 7:19)]
@@ -47,6 +48,8 @@ var <- c('health', 'adldiff', 'region', 'age', 'male', 'black',
           'married', 'school', 'faminc', 'employed', 'privins', 'medicaid')
 form <- as.formula(paste('ofp ~', paste(var, collapse = ' + ')))
 
+numeric_sum <- read.csv("numeric summary.csv")
+cat_sum <- read.csv("Cat Summary Table.csv")
 ```
 
 ### Is a Zero-Inflated model appropriate?
@@ -63,6 +66,8 @@ Where $\pi$ is modeled by a binomial GLM $\pi = g^{-1}(Z^{T}\gamma)$
 How does a zero-inflated model fit with our data? We examine this by fitting both a negative binomial and a zero inflated negative binomial on a subset of the most predictive variables.
 
 ```{r include = T, echo = T}
+kable(numeric_sum, digits = 2)
+kable(cat_sum, digits = 2)
 nbfit <- glm.nb(formula = ofp ~ adldiff + health + numchron + male + school, data = df)
 zerofit <- zeroinfl(formula = ofp ~ adldiff + health + numchron + male + school , data = df, dist = 'negbin')
 

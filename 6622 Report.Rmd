@@ -14,6 +14,8 @@ library(broom)
 library(pscl)
 library(lmtest)
 library(visdat)
+numeric_sum <- read.csv("numeric summary.csv")
+cat_sum <- read.csv("Cat Summary Table.csv")
 ```
 
 ### Objective
@@ -43,32 +45,20 @@ The variables correspond to measurements of counts and personal characterstics i
 
 **`adldiff`**: categorical variable measuring whether or not the person has a condition that limits the activities of daily living (can take values `no` or `yes`)
 
-**`region`**: categorical variable that states the geographical region of the United States in which the person lives (can take values `noreast`, `midwest`, `west` or `other`)
-
 **`age`**: $(\text{age in years})\times 10^{-1}$ of the person
 
 **`black`**: categorical variable stating whether or not the person is of African American heritage (can take values `no` or `yes`)
-
-**`gender`**: categorical variable stating whether the person is male or female (can take values `male` or `female`)
-
-**`married`**: categorical variable stating whether or not the person is married (can take values `no` or `yes`)
 
 **`school`**: number of years of education of the person
 
 **`faminc`**: $(\text{yearly income}) \times \$ 10,000^{-1}$ of the household of the person
 
-**`employed`**: categorical variable stating whether or not the person is employed (can take values `no` or `yes`)
-
 **`privins`**: categorical variable stating whether or not the person is covered by private health insurance (can take values `no` or `yes`)
 
 **`medicaid`**: categorical variable stating whether or not the person is covered by Medicaid (can take values `no` or `yes`)
 
-This still leaves us with all 4406 observations but reduces the number of variables to 14.
+This still leaves us with all 4406 observations but reduces the number of variables to 10.
 
-```{r include = T, echo = F, warning=FALSE, message=FALSE}
-sum_table <- read.csv('Summary Table Final.csv')
-kable(sum_table)
-```
 
 ### Exploratory Data Analysis
 
@@ -87,9 +77,7 @@ remove(DebTrivedi)
 head(df)
 ```
 
-All of the variables seem to be in a workable state - although some data cleaning can idealize the dataset. We will change all of the two-factor categorical variables, including `adldiff`, `black`, `gender`, `married`, `employed`, `privins`, and `medicaid` into logical variables.
-
-**Note**: the variable name for `gender` was changed to `male` when it was translated into a logical variable for easy interpretation.
+All of the variables seem to be in a workable state - although some data cleaning can idealize the dataset. We will change all of the two-factor categorical variables, including `adldiff`, `black`, `privins`, and `medicaid` into logical variables.
 
 Let's take a look at the state of missingness in the data set:
 
@@ -130,6 +118,19 @@ t(data.frame("NA.Freq" = colSums(is.na(df))))
 
 It looks like we don't have any missing values, which is rare for medical data, but it is great for our analysis nonetheless.
 
+We will also examine summary statistics for all the variables to get a sense of their scale and distribution.
+#### Summary Statistics: Numeric Variables
+```{r include = T, echo = F, warning=FALSE, message=FALSE}
+kable(numeric_sum, digits = 2)
+```
+
+Categorical variables are viewed in terms of their relationship to $ofp$, the primary response variable.
+
+#### Summary Statistics: Categorial Variables
+```{r include = T, echo = F, warning=FALSE, message=FALSE}
+kable(cat_sum, digits = 2)
+```
+
 ##### Baseline Generalized Linear Model
 
 When dealing with count data as a response variable, it is natural to first approach modelling the data using Poisson regression and the log-link function.
@@ -139,11 +140,11 @@ Identifying if the response variable is rate data or not is another important as
 We will attempt to fit the full model to take a preliminary look:
 
 ```{r}
-var <- c('health', 'adldiff', 'region', 'age', 'male', 'black', 
-          'married', 'school', 'faminc', 'employed', 'privins', 'medicaid')
+var <- c('health', 'adldiff', 'age', 'black', 
+          'school', 'faminc', 'numchron', 'privins', 'medicaid')
 form <- as.formula(paste('ofp ~', paste(var, collapse = ' + ')))
 pfit <- glm(form, data = df, family = poisson(link = 'log'))
-tidy(pfit)
+summary(pfit)
 ```
 
 We can see that quite a few variables show strong statistical association with the response, but we should take a look at how the response variable `ofp` looks when compared to a vector of Poisson randomly generated values with the same means:
