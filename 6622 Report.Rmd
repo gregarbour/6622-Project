@@ -395,6 +395,28 @@ We can continue in this way, sequentially adding variables to the model and keep
 
 ![](table.png)
 
+### Conclusion
 
+Looking at the previous table, we must decide whether to select model #8 or model #9. We've decided to choose model #8 for two reasons:
 
+- Model #8 provides the best score from both AIC and BIC, and rejects the null on both the Wald and LR test.
+
+- We prefer to use BIC as a more conservative measure of model fit, because the penalty for extra covariates is more stringent compared to the penalty used in the measurement of AIC
+
+Therefore, we decide our final model is as follows:
+
+`ofp ~ adldiff + health + numchron + school + privins + medicaid`
+
+This concludes our report.
+
+### References
+
+Ver Hoef, Jay M. and Boveng, Peter L., "QUASI-POISSON VS. NEGATIVE BINOMIAL REGRESSION: HOW
+SHOULD WE MODEL OVERDISPERSED COUNT DATA?" (2007). Publications, Agencies and Staff of the
+U.S. Department of Commerce. 142.
+https://digitalcommons.unl.edu/usdeptcommercepub/142 
+
+Dobson, Annette & Barnett, Adrian. (2008). An Introduction to Generalized Linear Models, Third Edition. 
+
+Data: Partha Deb and Pravin K. Trivedi, "Demand for Medical Care by the Elderly: A Finite Mixture Approach", Journal of Applied Econometrics, Vol. 12, No. 3, 1997, pp. 313-336.
 
